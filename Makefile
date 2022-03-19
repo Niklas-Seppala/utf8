@@ -1,16 +1,8 @@
 CC=gcc
-CC_FLAGS=-Wall -Wshadow -std=gnu99 -Iinclude
+CC_FLAGS=-Wall -Wshadow -std=gnu99
 PROJECT_NAME=utf8
 
-ifdef DEBUG
-	CC_FLAGS += -DDEBUG -g
-endif
-ifdef RT_ASSERT
-	CC_FLAGS += -DRT_ASSERT
-endif
-
-COMPLETE_PRINT = \033[1;32mSuccess\033[0m - Binary location: ${OUT_DIR}${PROJECT_NAME}\n
-MODULE_PRINT = \033[0;34m$@\033[0m
+COMPLETE_PRINT=\033[1;32mSuccess\033[0m - Binary location: ${OUT_DIR}${PROJECT_NAME}\n
 
 OBJ_DIR:=./obj/
 OUT_DIR:=./out/
@@ -22,6 +14,7 @@ OBJS := $(SRC:%.c=%.o)
 BINS := $(SRC:%.c=%)
 
 build: ${BINS}
+	@echo "\nBuilding project - ${PROJECT_NAME}"
 	@${CC} ${OBJS} -o ${OUT_DIR}${PROJECT_NAME}
 	@mv ./*.o ${OBJ_DIR}
 	@echo "$(COMPLETE_PRINT)"
@@ -30,10 +23,10 @@ build: ${BINS}
 	@${CC} -c ${CC_FLAGS} $< -o $@
 
 %: %.o
-	@echo "$(MODULE_PRINT)"
-
+	
 run:
-	@./out/${PROJECT_NAME} ./out/test.txt
+	@echo -n "😀 😁 🤣" > ${OUT_DIR}test.txt
+	@${OUT_DIR}${PROJECT_NAME} ${OUT_DIR}test.txt
 
 clean:
 	@rm $(OBJ_DIR)* $(OUT_DIR)* *.o 2>/dev/null || true

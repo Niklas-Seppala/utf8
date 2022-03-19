@@ -3,30 +3,37 @@
 #include <inttypes.h>
 
 #define ARG_FILE 1
-#define MASK_FIRST_6 0x3F
-#define ALL_BITS_SET 0xFF
-#define IS_WIDE(c) ((int8_t)c) < 0
+#define is_utf8(c) ((int8_t)c) < 0
 
-// TODO: Make it work with generic byte length
-static uint64_t read_wide(int8_t sbyte, FILE *stream) 
+/**
+ * @brief Tries to read UTF-8 encoded byte sequence from
+ *        provided stream.
+ * 
+ * @param sbyte SIGNED start byte of the sequence. 
+ * @param stream source stream.
+ * @return uint64_t Unicode character.
+ */
+static uint64_t read_unicode(int8_t sbyte, FILE *stream) 
 {
     // Copy, first byte in sequence gets manipulated.
     uint8_t byte = sbyte;
 
-    // Determine byte width.
-    int width = 0;
-    while (IS_WIDE(sbyte))
+    // Determine byte width of the encoding.
+    int n = 0;
+    while (is_utf8(sbyte))
     {
-        width++;
+        n++;
         sbyte <<= 1;
     }
     
-    uint64_t utf8 = byte & (ALL_BITS_SET >> (width + 1)); 
+    // Start acculmulating result bit sequence.
+    uint64_t utf8 = byte & (0xFF >> (n + 1)); // Include tail 0 from width encoding to byte mask.
 
+    // Read bytes from n bytes from stream and push bits to result.
     // First byte is already read.
-    for (int i = 0; i < width - 1; i++)
+    for (int i = 0; i < n - 1; i++)
     {
-        byte = fgetc(stream) & MASK_FIRST_6;
+        byte = fgetc(stream) & 0x3F; // 6 LSB
         utf8 = (utf8 << 6) | byte;
     }
 
@@ -52,7 +59,7 @@ static FILE *openfile(int argc, const char **argv)
 }
 
 
-int main(int argc, char const *argv[])
+int main(int argc, char const **argv)
 {
     FILE *file = openfile(argc, argv);
 
@@ -60,12 +67,11 @@ int main(int argc, char const *argv[])
     while ((sbyte = fgetc(file)) != EOF)
     {
         fprintf(stdout, "U+");
-        if (IS_WIDE(sbyte)) 
+        if (is_utf8(sbyte)) 
         {
             // UTF-8 encoding encountered, delegate reading.
-            const uint64_t utf8_byte_seq = read_wide(sbyte, file);
-            fprintf(stdout, "%lX ", utf8_byte_seq);
-            
+            const uint64_t utf8 = read_unicode(sbyte, file);
+            fprintf(stdout, "%lX ", utf8);
         }
         else
         {
