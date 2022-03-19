@@ -9,7 +9,7 @@ ifdef RT_ASSERT
 	CC_FLAGS += -DRT_ASSERT
 endif
 
-COMPLETE_PRINT = \033[1;32mSuccess\033[0m\n\nBinary location: ${OUT_DIR}${PROJECT_NAME}\n----------------\n
+COMPLETE_PRINT = \033[1;32mSuccess\033[0m - Binary location: ${OUT_DIR}${PROJECT_NAME}\n
 MODULE_PRINT = \033[0;34m$@\033[0m
 
 OBJ_DIR:=./obj/
@@ -33,7 +33,7 @@ build: ${BINS}
 	@echo "$(MODULE_PRINT)"
 
 run:
-	@./out/${PROJECT_NAME}
+	@./out/${PROJECT_NAME} ./out/test.txt
 
 clean:
 	@rm $(OBJ_DIR)* $(OUT_DIR)* *.o 2>/dev/null || true
