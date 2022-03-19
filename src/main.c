@@ -18,7 +18,7 @@ static uint64_t read_unicode(int8_t sbyte, FILE *stream)
     // Copy, first byte in sequence gets manipulated.
     uint8_t byte = sbyte;
 
-    // Determine byte width of the encoding.
+    // Determine byte width of the encoding. If MSB is set, increment n.
     int n = 0;
     while (is_utf8(sbyte))
     {
@@ -40,19 +40,29 @@ static uint64_t read_unicode(int8_t sbyte, FILE *stream)
     return utf8;
 }
 
+/**
+ * @brief Tries to open specified file. If not success,
+ *        Prints error message to stderr before abort.
+ * 
+ * @param argc Program argument count.
+ * @param argv Program arguments.
+ * @return FILE* Opened file .
+ */
 static FILE *openfile(int argc, const char **argv)
 {
     // Check if there exists a file path argument.
-    if (argc < 2) {
+    if (argc < 2) 
+    {
         fprintf(stderr, "Invalid arguments\n");
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     // Try opening specified file.
     FILE *file = fopen(argv[ARG_FILE], "r");
-    if (!file) {
+    if (!file) 
+    {
         fprintf(stderr, "Could not open file: %s", argv[ARG_FILE]);
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     return file;
@@ -66,7 +76,7 @@ int main(int argc, char const **argv)
     int8_t sbyte;
     while ((sbyte = fgetc(file)) != EOF)
     {
-        fprintf(stdout, "U+");
+        fprintf(stdout, "U+"); // Prefix
         if (is_utf8(sbyte)) 
         {
             // UTF-8 encoding encountered, delegate reading.
@@ -82,5 +92,5 @@ int main(int argc, char const **argv)
     fputc('\n', stdout);
 
     fclose(file);
-    return 0;
+    return EXIT_SUCCESS;
 }
