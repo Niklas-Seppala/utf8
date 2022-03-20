@@ -3,7 +3,23 @@
 #include <inttypes.h>
 
 #define ARG_FILE 1
-#define is_utf8(c) ((int8_t)c) < 0
+#define TRAILING_WIDTH 6
+#define TRAILING_WIDTH_MASK 0x3F
+#define MSB_SET(byte) (((int8_t)byte) < 0)
+#define IS_UTF_8(byte) MSB_SET(byte)
+
+/**
+ * @brief Determines the width of utf-8 encoding.
+ * 
+ * @param sbyte SIGNED start byte of the sequence.
+ * @return int width in n bytes.
+ */
+static int encoding_width(int8_t sbyte) 
+{
+    int n;
+    for (n = 0; MSB_SET(sbyte); n++) sbyte <<= 1;
+    return n;
+}
 
 /**
  * @brief Tries to read UTF-8 encoded byte sequence from
@@ -15,28 +31,17 @@
  */
 static uint64_t read_unicode(int8_t sbyte, FILE *stream) 
 {
-    // Copy, first byte in sequence gets manipulated.
-    uint8_t byte = sbyte;
-
-    // Determine byte width of the encoding. If MSB is set, increment n.
-    int n = 0;
-    while (is_utf8(sbyte))
-    {
-        n++;
-        sbyte <<= 1;
-    }
-    
+    int n = encoding_width(sbyte);
     // Start acculmulating result bit sequence.
-    uint64_t utf8 = byte & (0xFF >> (n + 1)); // Include tail 0 from width encoding to byte mask.
+    uint64_t utf8 = sbyte & (0xFF >> (n + 1)); // Include tail 0 from width encoding to byte mask.
 
     // Read bytes from n bytes from stream and push bits to result.
     // First byte is already read.
     for (int i = 0; i < n - 1; i++)
     {
-        byte = fgetc(stream) & 0x3F; // 6 LSB
-        utf8 = (utf8 << 6) | byte;
+        sbyte = fgetc(stream) & TRAILING_WIDTH_MASK;
+        utf8 = (utf8 << TRAILING_WIDTH) | sbyte;
     }
-
     return utf8;
 }
 
@@ -77,7 +82,7 @@ int main(int argc, char const **argv)
     while ((sbyte = fgetc(file)) != EOF)
     {
         fprintf(stdout, "U+"); // Prefix
-        if (is_utf8(sbyte)) 
+        if (IS_UTF_8(sbyte)) 
         {
             // UTF-8 encoding encountered, delegate reading.
             const uint64_t utf8 = read_unicode(sbyte, file);
