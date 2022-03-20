@@ -17,8 +17,8 @@
 static inline int encoding_width(int8_t sbyte)
 {
     int n;
-    for (n = 0; IS_MSB_SET(sbyte); n++)
-        sbyte <<= 1;
+    for (n = 0; IS_MSB_SET(sbyte); sbyte <<= 1)
+        n++;
     return n;
 }
 
@@ -32,13 +32,13 @@ static inline int encoding_width(int8_t sbyte)
  */
 static inline uint32_t read_unicode(int8_t sbyte, FILE *stream)
 {
+    // Must use a copy.
     const int N = encoding_width(sbyte);
 
     const int FIRST_BYTE_MASK = 0xFF >> (N + 1); // Include tail 0 from width encoding.
     uint64_t utf8 = sbyte & FIRST_BYTE_MASK;
 
-    // Read n bytes from stream and push bits to result.
-    // First byte is already read.
+    // Read n - 1 bytes (first is already done) from stream and push data bits (LSB 6) to result.
     for (int i = 0; i < N - 1; i++)
         utf8 = (utf8 << TRAILING_WIDTH) | (fgetc(stream) & TRAILING_WIDTH_MASK);
 
@@ -80,17 +80,16 @@ int main(int argc, char const **argv)
     int8_t sbyte;
     while ((sbyte = fgetc(file)) != EOF)
     {
-        fprintf(stdout, "U+");
         if (IS_UTF_8(sbyte))
         {
             // UTF-8 encoding encountered, delegate reading.
             const uint32_t utf8 = read_unicode(sbyte, file);
-            fprintf(stdout, "%lX ", utf8);
+            fprintf(stdout, "U+%X ", utf8);
         }
         else
         {
             // Same treatment as typical ASCII.
-            fprintf(stdout, "%X ", sbyte);
+            fprintf(stdout, "U+%X ", sbyte);
         }
     }
     fputc('\n', stdout);
