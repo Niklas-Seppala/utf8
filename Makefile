@@ -1,5 +1,5 @@
 CC=gcc
-CC_FLAGS=-Wall -Wshadow -std=gnu99
+CC_FLAGS=-Wall -Wshadow -std=gnu99 -O3
 PROJECT_NAME=utf8
 
 COMPLETE_PRINT=\033[1;32mSuccess\033[0m - Binary location: ${OUT_DIR}${PROJECT_NAME}\n
