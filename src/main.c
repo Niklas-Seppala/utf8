@@ -5,8 +5,8 @@
 #define ARG_FILE 1
 #define TRAILING_WIDTH 6
 #define TRAILING_WIDTH_MASK 0x3F
-#define MSB_SET(byte) (((int8_t)byte) < 0)
-#define IS_UTF_8(byte) MSB_SET(byte)
+#define IS_MSB_SET(byte) (((int8_t)byte) < 0)
+#define IS_UTF_8(byte) IS_MSB_SET(byte)
 
 /**
  * @brief Determines the width of utf-8 encoding.
@@ -17,7 +17,7 @@
 static int encoding_width(int8_t sbyte) 
 {
     int n;
-    for (n = 0; MSB_SET(sbyte); n++) sbyte <<= 1;
+    for (n = 0; IS_MSB_SET(sbyte); n++) sbyte <<= 1;
     return n;
 }
 
@@ -35,7 +35,7 @@ static uint64_t read_unicode(int8_t sbyte, FILE *stream)
     // Start acculmulating result bit sequence.
     uint64_t utf8 = sbyte & (0xFF >> (n + 1)); // Include tail 0 from width encoding to byte mask.
 
-    // Read bytes from n bytes from stream and push bits to result.
+    // Read n bytes from stream and push bits to result.
     // First byte is already read.
     for (int i = 0; i < n - 1; i++)
     {
@@ -81,7 +81,7 @@ int main(int argc, char const **argv)
     int8_t sbyte;
     while ((sbyte = fgetc(file)) != EOF)
     {
-        fprintf(stdout, "U+"); // Prefix
+        fprintf(stdout, "U+");
         if (IS_UTF_8(sbyte)) 
         {
             // UTF-8 encoding encountered, delegate reading.
